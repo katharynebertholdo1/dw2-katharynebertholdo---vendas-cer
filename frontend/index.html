@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loja Escolar</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Toast Library -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <!-- Tema claro/escuro -->
+  <script>
+    // Verifica tema salvo
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  </script>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <img src="https://img.icons8.com/color/48/000000/shop.png" alt="Logo Loja" class="logo">
+      <h1>Loja Escolar</h1>
+    </div>
+    <div class="header-center">
+      <input type="search" id="search" aria-label="Buscar produto" placeholder="Buscar produto...">
+      <select id="sort-select" aria-label="Ordenar produtos">
+        <option value="">Ordenar por...</option>
+        <option value="preco_asc">Menor Preço</option>
+        <option value="preco_desc">Maior Preço</option>
+        <option value="nome">Nome A-Z</option>
+      </select>
+      <button id="export-btn" aria-label="Exportar lista de produtos" class="export-button">
+        📥 Exportar
+      </button>
+      <button id="theme-toggle" aria-label="Alternar tema claro/escuro" class="theme-toggle">
+        🌙
+      </button>
+    </div>
+    <div class="header-right">
+      <div id="cart-icon" aria-label="Carrinho" tabindex="0">
+        <span aria-hidden="true">🛒</span>
+        <span id="cart-count">0</span>
+      </div>
+    </div>
+  </header>
+  <main id="product-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;padding:2rem;background:#fff;">
+    <!-- Produtos serão listados aqui -->
+  </main>
+
+  <!-- Drawer do Carrinho -->
+  <div id="cart-drawer" class="cart-drawer" aria-label="Carrinho de compras" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="cart-content">
+      <header class="cart-header">
+        <h2>Carrinho 🛒</h2>
+        <button class="close-cart" aria-label="Fechar carrinho">×</button>
+      </header>
+      
+      <div class="cart-items" role="list">
+        <!-- Itens do carrinho serão listados aqui -->
+      </div>
+
+      <div class="cart-footer">
+        <div class="cupom-section">
+          <label for="cupom">Cupom de desconto:</label>
+          <input type="text" id="cupom" placeholder="Digite seu cupom" aria-label="Digite seu cupom de desconto">
+          <button id="apply-cupom" aria-label="Aplicar cupom">Aplicar</button>
+        </div>
+        
+        <div class="cart-summary">
+          <p>Subtotal: <span id="subtotal">R$ 0,00</span></p>
+          <p>Desconto: <span id="discount">R$ 0,00</span></p>
+          <p class="total">Total: <span id="total">R$ 0,00</span></p>
+        </div>
+
+        <button id="checkout" class="checkout-button" aria-label="Finalizar compra">
+          Finalizar Compra
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer style="background:#0EA5E9;color:#fff;text-align:center;padding:1rem;font-size:0.9rem;">
+    &copy; 2025 Loja Escolar. Todos os direitos reservados.
+  </footer>
+
+  <!-- Modal de Admin -->
+  <div id="admin-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <header>
+        <h2 id="modal-title">Gerenciar Produto</h2>
+        <button class="close-modal" aria-label="Fechar modal">×</button>
+      </header>
+
+      <form id="product-form">
+        <div class="form-group">
+          <label for="nome">Nome do Produto*:</label>
+          <input type="text" id="nome" name="nome" required minlength="3" maxlength="60" aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label for="descricao">Descrição:</label>
+          <textarea id="descricao" name="descricao" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="preco">Preço*:</label>
+          <input type="number" id="preco" name="preco" step="0.01" min="0.01" required aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label for="estoque">Estoque*:</label>
+          <input type="number" id="estoque" name="estoque" min="0" required aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label for="categoria">Categoria*:</label>
+          <select id="categoria" name="categoria" required aria-required="true">
+            <option value="">Selecione...</option>
+            <option value="Cadernos">Cadernos</option>
+            <option value="Escrita">Escrita</option>
+            <option value="Mochilas">Mochilas</option>
+            <option value="Organização">Organização</option>
+            <option value="Decoração">Decoração</option>
+            <option value="Medição">Medição</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sku">SKU:</label>
+          <input type="text" id="sku" name="sku">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="save-button">Salvar</button>
+          <button type="button" class="cancel-button">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
