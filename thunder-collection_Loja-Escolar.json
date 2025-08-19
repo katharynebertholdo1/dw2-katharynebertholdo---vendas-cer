@@ -1,0 +1,87 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Loja Escolar API",
+  "dateExported": "2025-08-19T12:00:00.000Z",
+  "version": "1.1",
+  "folders": [],
+  "requests": [
+    {
+      "name": "Listar Produtos",
+      "url": "http://localhost:8000/produtos",
+      "method": "GET",
+      "description": "Lista todos os produtos"
+    },
+    {
+      "name": "Listar Produtos (Ordenado por Preço ASC)",
+      "url": "http://localhost:8000/produtos?sort=preco_asc",
+      "method": "GET",
+      "description": "Lista produtos ordenados por preço crescente"
+    },
+    {
+      "name": "Listar Produtos (Ordenado por Nome)",
+      "url": "http://localhost:8000/produtos?sort=nome",
+      "method": "GET",
+      "description": "Lista produtos ordenados por nome"
+    },
+    {
+      "name": "Buscar Produtos",
+      "url": "http://localhost:8000/produtos?search=caderno",
+      "method": "GET",
+      "description": "Busca produtos por nome"
+    },
+    {
+      "name": "Criar Produto",
+      "url": "http://localhost:8000/produtos",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "nome": "Novo Produto",
+        "descricao": "Descrição do produto",
+        "preco": 29.90,
+        "estoque": 10,
+        "categoria": "Cadernos",
+        "sku": "PROD001"
+      },
+      "description": "Cria um novo produto"
+    },
+    {
+      "name": "Atualizar Produto",
+      "url": "http://localhost:8000/produtos/1",
+      "method": "PUT",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "nome": "Produto Atualizado",
+        "preco": 39.90
+      },
+      "description": "Atualiza um produto existente"
+    },
+    {
+      "name": "Deletar Produto",
+      "url": "http://localhost:8000/produtos/1",
+      "method": "DELETE",
+      "description": "Remove um produto"
+    },
+    {
+      "name": "Confirmar Pedido",
+      "url": "http://localhost:8000/carrinho/confirmar",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "itens": [
+          {
+            "id": 1,
+            "qtd": 2
+          }
+        ],
+        "cupom": "ALUNO10"
+      },
+      "description": "Confirma um pedido com cupom de desconto"
+    }
+  ]
+}
