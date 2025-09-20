@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendas Escolares — Loja Escolar</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="container header-bar">
+      <h1>Loja Escolar</h1>
+      <button id="btn-cart" class="btn btn-primary" aria-haspopup="dialog" aria-controls="cart-drawer" aria-expanded="false">Carrinho</button>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <section aria-labelledby="sec-catalogo">
+      <div class="catalog-toolbar">
+        <h2 id="sec-catalogo" class="sr-only">Catálogo de Produtos</h2>
+        <div class="filters">
+          <input id="filter-text" type="search" placeholder="Buscar..." aria-label="Buscar produtos" />
+          <select id="filter-category" aria-label="Filtrar por categoria">
+            <option value="">Todas categorias</option>
+          </select>
+          <select id="sort" aria-label="Ordenar por">
+            <option value="nome:asc">Nome (A→Z)</option>
+            <option value="nome:desc">Nome (Z→A)</option>
+            <option value="preco:asc">Preço (menor→maior)</option>
+            <option value="preco:desc">Preço (maior→menor)</option>
+          </select>
+        </div>
+        <div class="toolbar-actions">
+          <button id="btn-new" class="btn btn-primary">Novo Produto</button>
+        </div>
+        <div id="catalog-status" class="status" aria-live="polite"></div>
+      </div>
+      <section class="products-grid" id="products-grid" aria-live="polite" aria-busy="true">
+        <!-- itens serão renderizados via JS -->
+      </section>
+      <nav id="pagination" class="pagination" aria-label="Paginação de produtos"></nav>
+    </section>
+  </main>
+
+  <!-- Drawer/Modal do Carrinho (vazio por enquanto) -->
+  <div id="cart-drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="cart-title" aria-describedby="cart-desc">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h2 id="cart-title">Carrinho</h2>
+        <button id="btn-close-cart" class="btn btn-outline-light" aria-label="Fechar carrinho">Fechar</button>
+      </div>
+      <p id="cart-desc" class="sr-only">Lista de itens do carrinho com controles de quantidade e remoção. Use Tab para navegar.</p>
+      <div class="drawer-body" id="cart-items">
+        <!-- itens adicionados aparecerão aqui -->
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-primary" disabled>Finalizar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Formulário de Produto -->
+  <div id="product-modal" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="product-title" aria-describedby="product-desc">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h2 id="product-title">Novo Produto</h2>
+        <button id="btn-close-product" class="btn btn-outline-light" aria-label="Fechar formulário">Fechar</button>
+      </div>
+      <div class="drawer-body">
+        <p id="product-desc" class="sr-only">Formulário para criação e edição de produto. Todos os campos com rótulos. Use Tab para navegar entre campos.</p>
+        <form id="product-form" novalidate>
+          <input type="hidden" id="prod-id" />
+
+          <div class="form-field">
+            <label for="prod-nome">Nome</label>
+            <input id="prod-nome" name="nome" type="text" required minlength="3" maxlength="60" />
+            <div class="field-error" id="err-nome" aria-live="polite"></div>
+          </div>
+
+          <div class="form-field">
+            <label for="prod-descricao">Descrição</label>
+            <textarea id="prod-descricao" name="descricao" rows="3"></textarea>
+            <div class="field-error" id="err-descricao" aria-live="polite"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="prod-preco">Preço (R$)</label>
+              <input id="prod-preco" name="preco" type="number" step="0.01" min="0.01" required />
+              <div class="field-error" id="err-preco" aria-live="polite"></div>
+            </div>
+            <div class="form-field">
+              <label for="prod-estoque">Estoque</label>
+              <input id="prod-estoque" name="estoque" type="number" step="1" min="0" value="0" required />
+              <div class="field-error" id="err-estoque" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="prod-categoria">Categoria</label>
+              <input id="prod-categoria" name="categoria" type="text" required />
+              <div class="field-error" id="err-categoria" aria-live="polite"></div>
+            </div>
+            <div class="form-field">
+              <label for="prod-sku">SKU (opcional)</label>
+              <input id="prod-sku" name="sku" type="text" maxlength="64" />
+              <div class="field-error" id="err-sku" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="btn-cancel" class="btn btn-secondary">Cancelar</button>
+            <button type="submit" id="btn-save" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de feedback -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
