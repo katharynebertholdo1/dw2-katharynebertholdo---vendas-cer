@@ -1,0 +1,31 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.cache/
+*.egg-info/
+dist/
+build/
+# Projeto Vendas â€” extras
+.env
+*.db
+prints/*.psd
+*.sqlite
+.DS_Store
+
+# Projeto Vendas — extras
+.env
+*.db
+*.sqlite
+.DS_Store
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.cache/
+*.egg-info/
+dist/
+build/
