@@ -1,0 +1,74 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-09-15T00:00:00.000Z",
+  "__export_source": "ai",
+  "resources": [
+    {
+      "_id": "wrk_vendas",
+      "_type": "workspace",
+      "name": "Vendas Escolares — API",
+      "scope": "collection"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "GET /health",
+      "method": "GET",
+      "url": "http://localhost:8000/health"
+    },
+    {
+      "_id": "req_get_produtos",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "GET /produtos",
+      "method": "GET",
+      "url": "http://localhost:8000/produtos"
+    },
+    {
+      "_id": "req_post_produto",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "POST /produtos",
+      "method": "POST",
+      "url": "http://localhost:8000/produtos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Produto Insomnia\",\n  \"descricao\": \"Criado pela coleção\",\n  \"preco\": 9.99,\n  \"estoque\": 10,\n  \"categoria\": \"Testes\",\n  \"sku\": \"INS-001\"\n}"
+      }
+    },
+    {
+      "_id": "req_put_produto",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "PUT /produtos/{id}",
+      "method": "PUT",
+      "url": "http://localhost:8000/produtos/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"preco\": 12.49\n}"
+      }
+    },
+    {
+      "_id": "req_delete_produto",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "DELETE /produtos/{id}",
+      "method": "DELETE",
+      "url": "http://localhost:8000/produtos/1"
+    },
+    {
+      "_id": "req_post_carrinho",
+      "_type": "request",
+      "parentId": "wrk_vendas",
+      "name": "POST /carrinho/confirmar",
+      "method": "POST",
+      "url": "http://localhost:8000/carrinho/confirmar",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"itens\": [\n    { \"produto_id\": 1, \"quantidade\": 1 },\n    { \"produto_id\": 4, \"quantidade\": 2 }\n  ],\n  \"cupom\": \"ALUNO10\"\n}"
+      }
+    }
+  ]
+}
