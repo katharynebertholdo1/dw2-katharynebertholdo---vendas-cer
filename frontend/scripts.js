@@ -440,3 +440,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* Commit #5: formulário + integrações CRUD ativados (marcador) */
+
+/* Commit #7: filtros + ordenação persistida + paginação (marcador) */
