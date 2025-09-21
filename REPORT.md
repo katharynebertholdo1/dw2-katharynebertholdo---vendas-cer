@@ -146,3 +146,7 @@ Este documento consolida arquitetura, decisões técnicas, validações e pontos
 - Coleções incluídas na raiz: `thunder-collection.json` e `insomnia-collection.json` com rotas
   - GET/POST/PUT/DELETE /produtos
   - POST /carrinho/confirmar (mock de pedido com baixa de estoque e `cupom: ALUNO10`)
+
+
+![alt text](image.png)
+![alt text](image-1.png)
