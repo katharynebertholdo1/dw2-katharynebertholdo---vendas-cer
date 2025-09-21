@@ -10,6 +10,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectSort = document.getElementById('sort');
   const pager = document.getElementById('pagination');
 
+  // Helper: normaliza acentos/maiúsculas p/ chave de lookup
+  function key(s){
+    try { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+    catch(e){ return String(s).toLowerCase().trim(); }
+  }
+
+  // Mapeamento de imagens (catálogo + carrinho) — chaves normalizadas
+  const IMAGENS = {
+    "lapis hb": "assets/img/lapis-hb.jpg",
+    "caneta azul": "assets/img/Caneta azul.jpg",
+    "caneta preta": "assets/img/Caneta preta.jpg",
+    "caneta vermelha": "assets/img/Caneta vermelha.jpg",
+    "borracha": "assets/img/Borracha.jpg",
+    "apontador": "assets/img/Apontador.jpg",
+    "regua 30cm": "assets/img/regua-30cm.jpg",
+    "caderno universitario": "assets/img/caderno-universitario.jpg",
+  };
+
   // Modal de produto
   const modal = document.getElementById('product-modal');
   const btnCloseProduct = document.getElementById('btn-close-product');
@@ -37,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sku: field('err-sku'),
   };
 
-  // Abrir/fechar modal do carrinho
+  // Acessibilidade: foco/teclado no drawer
   const focusableSelector = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
   let lastFocus = null;
   function trapFocus(container, e){
@@ -70,21 +88,34 @@ document.addEventListener('DOMContentLoaded', () => {
   drawer.addEventListener('click', (e) => { if (e.target === drawer) closeDrawer(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !drawer.classList.contains('hidden')) closeDrawer(); });
 
-  // Renderizar produto
+  // Renderizar produto (catálogo)
   function productCard(p) {
     const el = document.createElement('div');
     el.className = 'product-card';
-    el.innerHTML = `
-      <div class="product-thumb" role="img" aria-label="Imagem de ${p.nome}"></div>
+
+    // Thumb com imagem
+    const thumb = document.createElement('div');
+    thumb.className = 'product-thumb';
+    const imgSrc = IMAGENS[key(p.nome)];
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = `Imagem de ${p.nome}`;
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+    }
+    el.appendChild(thumb);
+
+    // Demais infos
+    el.insertAdjacentHTML('beforeend', `
       <h3>${p.nome}</h3>
       <p class="price">R$ ${Number(p.preco).toFixed(2)}</p>
       <button class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho">Adicionar</button>
-    `;
+    `);
     return el;
   }
 
-  // Buscar produtos do backend
-  // Estado de UX
+  // Estado de UX + filtros
   const UX_KEY = 'vendas_ux_v1';
   const ux = { sort: 'nome:asc', text: '', categoria: '', page: 1 };
   function saveUX(){ localStorage.setItem(UX_KEY, JSON.stringify(ux)); }
@@ -109,20 +140,21 @@ document.addEventListener('DOMContentLoaded', () => {
     statusBox.textContent = 'Carregando produtos...';
     applySkeleton();
     try {
-      // Filtros/ordenação
       const params = new URLSearchParams();
       if (ux.text) params.set('search', ux.text);
       if (ux.categoria) params.set('categoria', ux.categoria);
       if (ux.sort) params.set('sort', ux.sort);
+
       const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
       if (!resp.ok) throw new Error('Falha ao carregar produtos');
       const data = await resp.json();
-      // Popular select de categorias
+
+      // Popular categorias
       const categorias = [...new Set(data.map(p => p.categoria))].sort();
       selectCat.innerHTML = '<option value="">Todas categorias</option>' + categorias.map(c=>`<option value="${c}">${c}</option>`).join('');
       if (ux.categoria) selectCat.value = ux.categoria;
 
-      // Paginação (10 por página)
+      // Paginação (aqui usando a lista toda na página)
       const pageSize = data.length;
       const total = data.length;
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -138,10 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBox.textContent = `${total} produto(s) • página ${ux.page}/${totalPages}`;
       }
 
-      // Render pager
+      // Oculta pager por ora
       pager.innerHTML = '';
-if (pager) pager.style.display = 'none';
-} catch (err) {
+      if (pager) pager.style.display = 'none';
+    } catch (err) {
       console.error(err);
       statusBox.textContent = 'Erro ao carregar produtos. Verifique se o backend está em execução.';
     } finally {
@@ -153,14 +185,9 @@ if (pager) pager.style.display = 'none';
 
   // Carrinho (localStorage)
   const CART_KEY = 'vendas_cart_v1';
-  const cart = {
-    items: {}, // produtoId -> { produto, qtd }
-  };
+  const cart = { items: {} }; // produtoId -> { produto, qtd }
   function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateBadge(); }
-  function loadCart() {
-    try { const v = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); if (v && v.items) Object.assign(cart, v); } catch {}
-    updateBadge();
-  }
+  function loadCart() { try { const v = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); if (v && v.items) Object.assign(cart, v); } catch {} updateBadge(); }
   function countItems() { return Object.values(cart.items).reduce((acc, it) => acc + it.qtd, 0); }
   function subtotal() { return Object.values(cart.items).reduce((acc, it) => acc + (Number(it.produto.preco) * it.qtd), 0); }
 
@@ -173,7 +200,8 @@ if (pager) pager.style.display = 'none';
   const cartItemsEl = document.getElementById('cart-items');
   const cartFooter = document.querySelector('.drawer-footer');
   const confirmBtn = cartFooter.querySelector('button.btn-primary');
-  // Adiciona campo de cupom e subtotal
+
+  // Cupom e Subtotal
   const couponWrap = document.createElement('div');
   couponWrap.className = 'form-row';
   couponWrap.innerHTML = `
@@ -198,24 +226,38 @@ if (pager) pager.style.display = 'none';
       const row = document.createElement('div');
       row.className = 'cart-row';
       row.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
-          <div>
-            <div style="font-weight:600">${produto.nome}</div>
-            <div style="color:#6b7280">R$ ${Number(produto.preco).toFixed(2)}</div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <div class="cart-thumb"></div>
+            <div>
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${produto.nome}</div>
+              <div style="color:#6b7280">R$ ${Number(produto.preco).toFixed(2)}</div>
+            </div>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
-            <button class="btn-icon" aria-label="Diminuir">-</button>
-            <input class="qty" type="number" min="1" value="${qtd}" style="width:64px;padding:8px;border:1px solid #e5e7eb;border-radius:8px" />
-            <button class="btn-icon" aria-label="Aumentar">+</button>
-            <button class="btn-icon" aria-label="Remover">🗑️</button>
+            <button class="btn-ic" aria-label="Diminuir quantidade">-</button>
+            <span aria-live="polite" style="min-width:20px;text-align:center">${qtd}</span>
+            <button class="btn-ic" aria-label="Aumentar quantidade">+</button>
+            <button class="btn-ic" aria-label="Remover item">x</button>
           </div>
         </div>
       `;
-      const [btnMinus, qtyInput, btnPlus, btnRemove] = row.querySelectorAll('button, input.qty');
+
+      // Miniatura no carrinho
+      const thumbSrc = IMAGENS[key(produto.nome)];
+      if (thumbSrc) {
+        const img = document.createElement('img');
+        img.src = thumbSrc;
+        img.alt = `Imagem de ${produto.nome}`;
+        const holder = row.querySelector('.cart-thumb');
+        if (holder) holder.appendChild(img);
+      }
+
+      const [btnMinus, btnPlus, btnRemove] = row.querySelectorAll('button.btn-ic');
       btnMinus.addEventListener('click', () => { if (cart.items[produto.id].qtd > 1) { cart.items[produto.id].qtd--; saveCart(); renderCart(); } });
       btnPlus.addEventListener('click', () => { cart.items[produto.id].qtd++; saveCart(); renderCart(); });
       btnRemove.addEventListener('click', () => { delete cart.items[produto.id]; saveCart(); renderCart(); });
-      qtyInput.addEventListener('change', () => { const v = Math.max(1, parseInt(qtyInput.value,10)||1); cart.items[produto.id].qtd = v; saveCart(); renderCart(); });
+
       cartItemsEl.appendChild(row);
     });
     subtotalInput.value = `R$ ${subtotal().toFixed(2)}`;
@@ -231,8 +273,8 @@ if (pager) pager.style.display = 'none';
     const priceEl = card.querySelector('.price');
     const name = nameEl ? nameEl.textContent : 'Produto';
     const price = priceEl ? Number(priceEl.textContent.replace(/[^0-9.,]/g,'').replace(',','.')) : 0;
-    // Buscar o id do produto a partir da grid (recarregar dados para mapear nome->obj)
-    // Para simplificar, recarregamos a lista e pegamos pelo nome
+
+    // Busca produto pelo nome/preço atuais
     fetch('http://localhost:8000/produtos').then(r=>r.json()).then(list => {
       const prod = list.find(p => p.nome === name && Number(p.preco).toFixed(2) === price.toFixed(2));
       if (!prod) { showToast('Produto não encontrado.'); return; }
@@ -261,7 +303,6 @@ if (pager) pager.style.display = 'none';
       if (!resp.ok) throw await resp.json();
       const pedido = await resp.json();
       showToast(`Pedido #${pedido.id} confirmado. Total R$ ${Number(pedido.total).toFixed(2)}`);
-      // limpa carrinho e atualiza grid
       cart.items = {}; saveCart(); renderCart(); await loadProducts();
     } catch (err) {
       console.error(err);
@@ -283,7 +324,7 @@ if (pager) pager.style.display = 'none';
     setTimeout(() => toast.classList.remove('show'), 2000);
   }
 
-  // Abrir modal do formulário
+  // Formulário: abrir/fechar
   function openForm(mode, data) {
     lastFocus = document.activeElement;
     modal.classList.remove('hidden');
@@ -300,7 +341,6 @@ if (pager) pager.style.display = 'none';
       form.reset();
       fid.id.value = '';
     }
-    // foco inicial
     fid.nome.focus();
     modal.addEventListener('keydown', onModalKeydown);
   }
@@ -319,8 +359,7 @@ if (pager) pager.style.display = 'none';
     if (nome.length < 3 || nome.length > 60) { ferr.nome.textContent = 'Nome deve ter 3 a 60 caracteres.'; ok = false; }
     const preco = parseFloat(fid.preco.value);
     if (isNaN(preco) || preco < 0.01) { ferr.preco.textContent = 'Preço deve ser >= 0,01.'; ok = false; }
-    // força 2 casas
-    fid.preco.value = preco.toFixed(2);
+    fid.preco.value = isNaN(preco) ? '' : preco.toFixed(2);
     const estoque = parseInt(fid.estoque.value, 10);
     if (isNaN(estoque) || estoque < 0) { ferr.estoque.textContent = 'Estoque deve ser >= 0.'; ok = false; }
     const categoria = fid.categoria.value.trim();
@@ -375,7 +414,6 @@ if (pager) pager.style.display = 'none';
       await loadProducts();
     } catch (err) {
       console.error(err);
-      // Mensagens do backend
       const msg = (err && err.detail && (err.detail.erro || err.detail)) || 'Erro ao salvar produto.';
       showToast(typeof msg === 'string' ? msg : 'Erro ao salvar produto.');
     }
@@ -383,7 +421,7 @@ if (pager) pager.style.display = 'none';
 
   field('btn-cancel').addEventListener('click', (e) => { e.preventDefault(); closeForm(); });
 
-  // Adicionar ações nos cards (editar/excluir)
+  // Ações nos cards (editar/excluir)
   function productActions(p) {
     const wrap = document.createElement('div');
     wrap.className = 'product-actions';
@@ -391,7 +429,7 @@ if (pager) pager.style.display = 'none';
     btnEdit.className = 'btn-icon';
     btnEdit.title = 'Editar';
     btnEdit.textContent = '✏️';
-  btnEdit.addEventListener('click', () => openForm('edit', p));
+    btnEdit.addEventListener('click', () => openForm('edit', p));
 
     const btnDel = document.createElement('button');
     btnDel.className = 'btn-icon';
@@ -413,26 +451,8 @@ if (pager) pager.style.display = 'none';
     return wrap;
   }
 
-  // Renderizar produto
-  function productCard(p) {
-    const el = document.createElement('div');
-    el.className = 'product-card';
-    el.innerHTML = `
-      <div class=\"product-thumb\" role=\"img\" aria-label=\"Imagem de ${p.nome}\"></div>
-      <h3>${p.nome}</h3>
-      <p class=\"price\">R$ ${Number(p.preco).toFixed(2)}</p>
-      <button class=\"btn btn-primary\" aria-label=\"Adicionar ${p.nome} ao carrinho\">Adicionar</button>
-    `;
-    el.appendChild(productActions(p));
-    return el;
-  }
-
-  // Eventos de filtros e ordenação (persistidos)
+  // Filtros e ordenação (persistidos)
   inputText.addEventListener('input', () => { ux.text = inputText.value.trim(); ux.page = 1; saveUX(); loadProducts(); });
   selectCat.addEventListener('change', () => { ux.categoria = selectCat.value; ux.page = 1; saveUX(); loadProducts(); });
   selectSort.addEventListener('change', () => { ux.sort = selectSort.value; ux.page = 1; saveUX(); loadProducts(); });
 });
-
-/* Commit #5: formul�rio + integra��es CRUD ativados (marcador) */
-
-/* Commit #7: filtros + ordena��o persistida + pagina��o (marcador) */
