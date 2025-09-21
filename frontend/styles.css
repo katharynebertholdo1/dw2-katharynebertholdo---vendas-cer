@@ -1,11 +1,20 @@
 :root{
-  --rosa:#E91E63;           /* primária */
-  --rosa-escuro:#C2185B;    /* para contrastar/acessibilidade */
+  /* Paleta obrigatória */
+  --azul:#0EA5E9;           /* primária */
+  --vermelho:#EF4444;       /* danger */
+  --verde:#22C55E;          /* success */
+  --texto-oficial:#111827;  /* texto padrão/alto contraste */
   --branco:#FFFFFF;
-  --texto:#0F172A;          /* ligeiramente mais escuro */
+
+  /* Derivações utilitárias (sem quebrar a paleta-base) */
+  --azul-alpha-12: rgba(14,165,233,.12);
+  --azul-alpha-18: rgba(14,165,233,.18);
+  --vermelho-alpha-12: rgba(239,68,68,.12);
+
+  /* Neutros existentes no projeto (mantidos) */
+  --texto:#111827;          /* unifica com texto-oficial */
   --cinza:#6B7280;
   --cinza-linha:#E5E7EB;
-  --rosa-claro:#FCE7F3;
   --sombra: 0 8px 30px rgba(17, 24, 39, .08);
 }
 
@@ -25,12 +34,14 @@ body{
 .container{max-width:1080px;margin:0 auto;padding:0 16px}
 
 /* ==== Header ============================================================ */
+/* Para manter contraste AA, usamos header claro com acentos azuis */
 header{
-  background:linear-gradient(180deg, var(--rosa), var(--rosa-escuro));
-  color:var(--branco);
+  background: var(--branco);
+  color: var(--texto-oficial);
   padding:18px 0;
   margin-bottom:24px;
-  box-shadow:0 4px 18px rgba(233,30,99,.25);
+  box-shadow:0 4px 18px rgba(17,24,39,.06);
+  border-bottom: 3px solid var(--azul);
 }
 header .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .header-bar h1{margin:0;font-size:1.55rem;letter-spacing:.2px}
@@ -50,31 +61,43 @@ header .container{display:flex;align-items:center;justify-content:space-between;
 .btn:active{transform:translateY(0)}
 .btn[disabled], .btn:disabled{opacity:.6; cursor:not-allowed; transform:none}
 
-.btn-primary{ --bg: var(--rosa); --fg: var(--branco); --bd: var(--rosa) }
-.btn-primary:hover{ background:var(--rosa-escuro); border-color:var(--rosa-escuro) }
+/* Primário = AZUL com texto escuro (melhor contraste que branco) */
+.btn-primary{
+  --bg: var(--azul);
+  --fg: var(--texto-oficial);
+  --bd: var(--azul);
+  background:var(--bg); color:var(--fg); border-color:var(--bd);
+}
+.btn-primary:hover{ box-shadow:0 8px 20px var(--azul-alpha-18) }
 
-.btn-secondary{ --bg: #fff; --fg: var(--rosa-escuro); --bd: var(--rosa-escuro) }
-.btn-secondary:hover{ background:var(--rosa-claro) }
+/* Secundário = contorno azul */
+.btn-secondary{
+  --bg:#fff; --fg: var(--azul); --bd: var(--azul);
+  background:var(--bg); color:var(--fg); border:1px solid var(--bd);
+}
+.btn-secondary:hover{ background:var(--azul-alpha-12) }
 
-.btn-outline-light{ --bg: transparent; --fg: var(--branco); --bd: rgba(255,255,255,.9); border-width:2px }
-.btn-outline-light:hover{ background:rgba(255,255,255,.12) }
+/* Variante “clara” sobre fundos escuros (se usada no projeto) */
+.btn-outline-light{ --bg: transparent; --fg: var(--texto-oficial); --bd: rgba(17,24,39,.6); border-width:2px }
+.btn-outline-light:hover{ background:rgba(17,24,39,.06) }
 
 /* badge do carrinho */
 #btn-cart{position:relative}
 #btn-cart::after{
   content:attr(data-count); position:absolute; top:-6px; right:-6px;
-  background:#fff; color:var(--rosa-escuro);
-  border:1px solid var(--rosa-escuro); min-width:20px; height:20px; line-height:18px;
+  background:#fff; color:var(--azul);
+  border:1px solid var(--azul); min-width:20px; height:20px; line-height:18px;
   border-radius:999px; font-size:.75rem; text-align:center; padding:0 4px;
 }
 
-/* foco visível */
-:focus{outline:3px solid var(--rosa-escuro); outline-offset:2px}
+/* foco visível (acento azul para acessibilidade) */
+:focus{outline:3px solid var(--azul); outline-offset:2px}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:3px solid var(--rosa-escuro); outline-offset:2px
+  outline:3px solid var(--azul); outline-offset:2px
 }
 
-a{color:var(--rosa-escuro)}
+/* Links em azul */
+a{color:var(--azul)}
 
 /* ==== Grid de produtos ================================================== */
 .products-grid{
@@ -87,12 +110,12 @@ a{color:var(--rosa-escuro)}
   transition:box-shadow .2s, border-color .2s, transform .06s;
 }
 .product-card:hover{
-  border-color:var(--rosa-escuro);
-  box-shadow:0 10px 24px rgba(233,30,99,.16);
+  border-color:var(--azul);
+  box-shadow:0 10px 24px var(--azul-alpha-12);
   transform:translateY(-1px);
 }
 
-/* >>> fundo branco liso nas thumbs (sem roxo) */
+/* fundo branco liso nas thumbs */
 .product-thumb{
   height:200px; border-radius:10px; margin-bottom:12px;
   display:flex; align-items:center; justify-content:center; overflow:hidden;
@@ -109,9 +132,9 @@ a{color:var(--rosa-escuro)}
   min-width:40px; min-height:40px;
   display:inline-flex; align-items:center; justify-content:center;
   border-radius:10px; border:1px solid var(--cinza-linha);
-  color:var(--rosa-escuro); background:#fff;
+  color:var(--azul); background:#fff;
 }
-.btn-icon:hover{background:var(--rosa-claro); border-color:var(--rosa-escuro)}
+.btn-icon:hover{background:var(--azul-alpha-12); border-color:var(--azul)}
 
 /* ==== Toolbar / filtros ================================================= */
 .catalog-toolbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
@@ -119,7 +142,7 @@ a{color:var(--rosa-escuro)}
 .filters input[type="search"], .filters select{
   padding:10px 12px; border:1px solid var(--cinza-linha); border-radius:10px; background:#fff; min-height:44px;
 }
-.filters input[type="search"]:focus, .filters select:focus{border-color:var(--rosa-escuro)}
+.filters input[type="search"]:focus, .filters select:focus{border-color:var(--azul)}
 .toolbar-actions{display:flex;gap:8px}
 
 /* ==== Drawer do carrinho =============================================== */
@@ -136,7 +159,7 @@ a{color:var(--rosa-escuro)}
 .drawer-header{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:16px; border-bottom:1px solid var(--cinza-linha);
-  background:linear-gradient(180deg, var(--rosa), var(--rosa-escuro)); color:#fff;
+  background:linear-gradient(180deg, var(--azul), var(--azul)); color:var(--texto-oficial);
 }
 .drawer-header h2{margin:0;font-size:1.2rem;letter-spacing:.2px}
 .drawer-body{flex:1; overflow:auto; padding:16px}
@@ -159,14 +182,14 @@ a{color:var(--rosa-escuro)}
 .form-field label{font-weight:700;margin-bottom:6px}
 .form-field input,.form-field textarea{padding:10px 12px;border:1px solid var(--cinza-linha);border-radius:10px;min-height:44px}
 .form-field textarea{min-height:96px;resize:vertical}
-.form-field input:focus,.form-field textarea:focus{border-color:var(--rosa-escuro)}
-.field-error{color:var(--rosa-escuro);font-size:.9rem;min-height:20px;margin-top:4px}
+.form-field input:focus,.form-field textarea:focus{border-color:var(--azul)}
+.field-error{color:var(--vermelho);font-size:.9rem;min-height:20px;margin-top:4px}
 .form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 
 /* ==== Toast ============================================================= */
 .toast{
   position:fixed;right:16px;bottom:16px;z-index:20;
-  background:#fff;border:2px solid var(--rosa-escuro);color:var(--texto);
+  background:#fff;border:2px solid var(--azul);color:var(--texto);
   padding:12px 16px;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.18);
   opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s
 }
@@ -175,26 +198,27 @@ a{color:var(--rosa-escuro)}
 /* ==== Paginação ========================================================= */
 .pagination{display:flex;gap:6px;justify-content:center;margin:16px 0}
 .pagination button{
-  border:1px solid var(--rosa-escuro);background:#fff;color:var(--rosa-escuro);
+  border:1px solid var(--azul);background:#fff;color:var(--azul);
   padding:8px 12px;border-radius:10px;min-width:36px
 }
-.pagination button:hover{background:var(--rosa-claro)}
-.pagination button.active{background:var(--rosa);color:#fff}
+.pagination button:hover{background:var(--azul-alpha-12)}
+.pagination button.active{background:var(--azul);color:var(--texto-oficial)}
 
 /* ==== Botões compactos do carrinho ===================================== */
 .btn-ic{
   min-width:36px; min-height:36px;
   display:inline-flex; align-items:center; justify-content:center;
   border-radius:10px; border:1px solid var(--cinza-linha);
-  background:#fff; color:var(--rosa-escuro);
+  background:#fff; color:var(--azul);
   transition:background .15s, border-color .15s, transform .04s;
 }
-.btn-ic:hover{background:var(--rosa-claro); border-color:var(--rosa-escuro)}
+.btn-ic:hover{background:var(--azul-alpha-12); border-color:var(--azul)}
 .btn-ic:active{transform:translateY(0.5px)}
 .btn-ic svg{width:18px;height:18px;display:block}
 
-.btn-ic.danger{color:#B91C1C; border-color:#FCA5A5}
-.btn-ic.danger:hover{background:#FEE2E2; border-color:#EF4444}
+/* Danger compact */
+.btn-ic.danger{color:var(--vermelho); border-color:#FCA5A5}
+.btn-ic.danger:hover{background:var(--vermelho-alpha-12); border-color:var(--vermelho)}
 
 /* ==== Skeleton loaders ================================================== */
 .skeleton{

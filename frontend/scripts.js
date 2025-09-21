@@ -127,8 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     el.insertAdjacentHTML('beforeend', `
       <h3>${p.nome}</h3>
-      <p class="price">R$ ${Number(p.preco).toFixed(2)}</p>
-      <button class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho">Adicionar</button>
+  <p class="price">R$ ${Number(p.preco).toFixed(2)}</p>
+  <p class="stock" aria-live="polite">Em estoque: ${p.estoque}</p>
+  <button class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho" ${p.estoque <= 0 ? 'disabled' : ''} class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho">Adicionar</button>
     `);
     el.appendChild(productActions(p));
     return el;
@@ -215,14 +216,129 @@ document.addEventListener('DOMContentLoaded', () => {
   const couponWrap = document.createElement('div');
   couponWrap.className = 'form-row';
   couponWrap.innerHTML = `
-    <div class="form-field"><label for="cupom">Cupom</label><input id="cupom" type="text" placeholder="ALUNO10" /></div>
+    <div class="form-field"><label for="cupom">Cupom</label>
+      <input id="cupom" type="text" placeholder="ALUNO10" />
+    </div>
     <div class="form-field"><label>Subtotal</label><input id="subtotal" type="text" disabled /></div>
+    <div class="form-field"><label>Desconto</label><input id="desconto" type="text" disabled /></div>
+    <div class="form-field"><label>Total</label><input id="total" type="text" disabled /></div>
+    <div class="form-field">
+      <label>Ações</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="btn-apply-coupon" class="btn">Aplicar cupom</button>
+        <button id="btn-review" class="btn btn-secondary" disabled>Revisar total</button>
+      </div>
+      <div id="cupom-status" class="hint" aria-live="polite" style="margin-top:4px"></div>
+    </div>
   `;
   cartFooter.prepend(couponWrap);
-  const couponInput = couponWrap.querySelector('#cupom');
+  const couponInput   = couponWrap.querySelector('#cupom');
   const subtotalInput = couponWrap.querySelector('#subtotal');
+  const descontoInput = couponWrap.querySelector('#desconto');
+  const totalInput    = couponWrap.querySelector('#total');
+  const btnApply      = couponWrap.querySelector('#btn-apply-coupon');
+  const btnReview     = couponWrap.querySelector('#btn-review');
+  const cupomStatusEl = couponWrap.querySelector('#cupom-status');
 
-  /* ===== Render do carrinho com ícones (–, +, lixeira) ===== */
+  // Estados possíveis: 'vazio' | 'digitando' | 'validado' | 'revisado'
+  let cupomState = 'vazio';
+  let cupomLocked = false;
+
+  function computeTotalsFront(subtotal, cupom) {
+    const sub = Number(subtotal) || 0;
+    const code = (cupom || '').trim().toUpperCase();
+    const desc = code === 'ALUNO10' ? +(sub * 0.10).toFixed(2) : 0;
+    const tot  = Math.max(0, +(sub - desc).toFixed(2));
+    return { desconto: desc, total: tot, valido: code === 'ALUNO10' };
+  }
+
+  function updateTotalsUI() {
+    try {
+      const entries = Object.values(cart.items || {});
+      const subtotalNum = entries.reduce((acc, it) => acc + Number(it.produto.preco) * it.qtd, 0);
+      const r = computeTotalsFront(subtotalNum, couponInput.value);
+      subtotalInput.value = `R$ ${subtotalNum.toFixed(2)}`;
+      descontoInput.value = `R$ ${r.desconto.toFixed(2)}`;
+      totalInput.value    = `R$ ${r.total.toFixed(2)}`;
+    } catch (e) {}
+  }
+
+  function setCupomState(next) {
+    cupomState = next;
+    if (cupomState === 'vazio') {
+      btnApply.disabled = true;
+      btnReview.disabled = true;
+      cupomStatusEl.textContent = '';
+      couponInput.disabled = false;
+      cupomLocked = false;
+    } else if (cupomState === 'digitando') {
+      btnApply.disabled = false;
+      btnReview.disabled = true;
+      cupomStatusEl.textContent = '';
+      couponInput.disabled = false;
+      cupomLocked = false;
+    } else if (cupomState === 'validado') {
+      btnApply.disabled = true;
+      btnReview.disabled = false;
+      cupomStatusEl.textContent = 'Cupom válido. Revise o total antes de confirmar.';
+      couponInput.disabled = false;
+      cupomLocked = false;
+    } else if (cupomState === 'revisado') {
+      btnApply.disabled = true;
+      btnReview.disabled = true;
+      cupomStatusEl.textContent = 'Total revisado. Pode confirmar a compra.';
+      couponInput.disabled = true; // trava para evitar troca depois da revisão
+      cupomLocked = true;
+    }
+    // Se houver cupom preenchido mas não revisado, o botão Confirmar fica desabilitado
+    try {
+      const confirmBtn = document.querySelector('.drawer-footer button.btn-primary');
+      if (!confirmBtn) return;
+      const hasCupom = (couponInput.value || '').trim().length > 0;
+      if (hasCupom) {
+        confirmBtn.disabled = (cupomState !== 'revisado');
+        confirmBtn.textContent = (cupomState === 'revisado') ? 'Confirmar compra' : 'Revise o total…';
+      } else {
+        // Sem cupom, fluxo normal
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Finalizar';
+      }
+    } catch {}
+  }
+
+  couponInput.addEventListener('input', () => {
+    const val = (couponInput.value || '').trim();
+    setCupomState(val ? 'digitando' : 'vazio');
+    updateTotalsUI();
+  });
+
+  btnApply.addEventListener('click', (e) => {
+    e.preventDefault();
+    const entries = Object.values(cart.items || {});
+    if (entries.length === 0) { showToast('Carrinho vazio.'); return; }
+    const subtotalNum = entries.reduce((acc, it) => acc + Number(it.produto.preco) * it.qtd, 0);
+    const r = computeTotalsFront(subtotalNum, couponInput.value);
+    updateTotalsUI();
+    if (!r.valido) {
+      cupomStatusEl.textContent = 'Cupom inválido.';
+      setCupomState('digitando');
+      return;
+    }
+    cupomStatusEl.textContent = 'Cupom válido! Clique em Revisar total.';
+    setCupomState('validado');
+  });
+
+  btnReview.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Segunda etapa: revisão explícita do total
+    updateTotalsUI();
+    setCupomState('revisado');
+  });
+
+  // Estado inicial
+  setCupomState('vazio');
+  couponInput.addEventListener('focus', () => { if (!couponInput.value) setCupomState('digitando'); });
+/* ===== Render do carrinho com ícones (–, +, lixeira) ===== */
   function renderCart() {
     cartItemsEl.innerHTML = '';
     const entries = Object.values(cart.items);
@@ -231,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
       subtotalInput.value = 'R$ 0,00';
       confirmBtn.disabled = true;
       return;
+    updateTotalsUI();
     }
     confirmBtn.disabled = false;
 
@@ -321,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('http://localhost:8000/produtos').then(r=>r.json()).then(list => {
       const prod = list.find(p => p.nome === name && Number(p.preco).toFixed(2) === price.toFixed(2));
       if (!prod) { showToast('Produto não encontrado.'); return; }
+      if (prod.estoque <= 0) { showToast('Sem estoque.'); return; }
       if (!cart.items[prod.id]) cart.items[prod.id] = { produto: prod, qtd: 0 };
       cart.items[prod.id].qtd++;
       saveCart(); renderCart(); showToast('Adicionado ao carrinho.');
