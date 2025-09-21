@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
       if (!resp.ok) throw new Error('Falha ao carregar produtos');
       const data = await resp.json();
+      window._lastList = Array.isArray(data) ? data.slice() : [];
 
       // Popular categorias
       const categorias = [...new Set(data.map(p => p.categoria))].sort();
@@ -421,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   field('btn-cancel').addEventListener('click', (e) => { e.preventDefault(); closeForm(); });
 
-  // Ações nos cards (editar/excluir)
+  // Ações nos cards (editar/excluir) — (se você quiser usar depois)
   function productActions(p) {
     const wrap = document.createElement('div');
     wrap.className = 'product-actions';
@@ -455,4 +456,104 @@ document.addEventListener('DOMContentLoaded', () => {
   inputText.addEventListener('input', () => { ux.text = inputText.value.trim(); ux.page = 1; saveUX(); loadProducts(); });
   selectCat.addEventListener('change', () => { ux.categoria = selectCat.value; ux.page = 1; saveUX(); loadProducts(); });
   selectSort.addEventListener('change', () => { ux.sort = selectSort.value; ux.page = 1; saveUX(); loadProducts(); });
+
+  // ===== Export (CSV/JSON) da lista atual =====
+  // ===== Export (CSV/JSON) da lista atual =====
+function toCSV(rows) {
+  const DELIM = ';'; // Excel pt-BR usa ponto e vírgula
+  const headers = ["nome","preco","estoque","categoria","sku"];
+  const lines = [];
+  // dica p/ Excel reconhecer o separador
+  lines.push("sep=" + DELIM);
+  // cabeçalho
+  lines.push(headers.join(DELIM));
+
+  if (!rows || !rows.length) return lines.join("\n");
+
+  function esc(val) {
+    if (val == null) return "";
+    let v = String(val);
+    // normaliza quebras de linha e escapa aspas
+    v = v.replace(/\r\n|\r|\n/g, "\n").replace(/"/g, '""');
+    // se contiver delimitador, aspas ou quebra de linha, envolve em aspas
+    if (v.includes(DELIM) || v.includes('"') || v.includes('\n')) {
+      v = `"${v}"`;
+    }
+    return v;
+  }
+
+  for (const r of rows) {
+    const preco = (typeof r.preco === 'number' ? r.preco : Number(r.preco || 0));
+    const precoBR = preco.toFixed(2).replace('.', ','); // vírgula decimal
+    const row = [
+      esc(r.nome || ""),
+      esc(precoBR),
+      esc(r.estoque ?? ""),
+      esc(r.categoria || ""),
+      esc(r.sku || "")
+    ];
+    lines.push(row.join(DELIM));
+  }
+  return lines.join("\n");
+}
+
+// Download CSV em UTF-16 LE com BOM (Excel-friendly)
+function downloadCSV_UTF16LE(filename, text) {
+  // prefixa BOM (0xFEFF) e converte cada code unit para UTF-16 LE
+  const utf16 = new Uint16Array(text.length + 1);
+  utf16[0] = 0xFEFF; // BOM
+  for (let i = 0; i < text.length; i++) {
+    utf16[i + 1] = text.charCodeAt(i);
+  }
+  const blob = new Blob([utf16], { type: "text/csv;charset=utf-16le" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+function download(filename, text, type="text/plain") {
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+async function exportCurrent(kind) {
+  // Reaproveita a mesma query usada no loadProducts()
+  const params = new URLSearchParams();
+  if (ux.text) params.set('search', ux.text);
+  if (ux.categoria) params.set('categoria', ux.categoria);
+  if (ux.sort) params.set('sort', ux.sort);
+
+  let list;
+  try {
+    const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
+    list = await resp.json();
+  } catch(e) {
+    list = Array.isArray(window._lastList) ? window._lastList : [];
+  }
+
+  if (kind === 'csv') {
+    const csv = toCSV(list);
+    // usa UTF-16 LE para o Excel não estragar acentos
+    downloadCSV_UTF16LE(`catalogo_${new Date().toISOString().slice(0,10)}.csv`, csv);
+    showToast('Catálogo exportado em CSV.');
+  } else {
+    download(`catalogo_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(list, null, 2), "application/json");
+    showToast('Catálogo exportado em JSON.');
+  }
+}
+
+const btnExportCSV = document.getElementById('btn-export-csv');
+const btnExportJSON = document.getElementById('btn-export-json');
+if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCurrent('csv'));
+if (btnExportJSON) btnExportJSON.addEventListener('click', () => exportCurrent('json'));
 });

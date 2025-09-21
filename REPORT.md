@@ -104,3 +104,45 @@ Este documento consolida arquitetura, decisões técnicas, validações e pontos
 8) Prompt #10 — Acessibilidade e release v1.0.0
 	- Trecho: ARIA nos modais, focus trap, foco visível, tipografia reforçada; tag `v1.0.0` publicada.
 	- Justificativa: conformidade básica com acessibilidade de teclado e fechamento do ciclo de release.
+
+
+## Diagrama (fluxo requisição → resposta)
+
+```text
+[Front (HTML/CSS/JS)]
+   |  fetch (GET/POST/PUT/DELETE)
+   v
+[FastAPI app.py] --(SQLAlchemy ORM)--> [SQLite (vendas.db)]
+   |  POST /carrinho/confirmar (valida estoque, aplica cupom)
+   v
+[Pedido + Itens]  <-- persiste total_final/subtotal/desconto
+```
+
+
+## Peculiaridades implementadas (3/10+)
+- Seed script com ~20 produtos (backend/seed.py).
+- Ordenação persistida (localStorage) por nome/preço (select#sort).
+- Export da lista atual (CSV/JSON) via botões (front).
+- Tratamento de erros (toasts visuais + HTTP codes padronizados).
+- Acessibilidade: aria-label em botões, foco visível, navegação por teclado.
+
+## Como rodar (resumo)
+1. Criar venv e instalar dependências:
+   ```bash
+   python -m venv .venv && .venv/Scripts/activate  # Windows
+   pip install -r backend/requirements.txt
+   ```
+2. Criar DB e dados de exemplo:
+   ```bash
+   python -m backend.seed
+   ```
+3. Subir API:
+   ```bash
+   uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+   ```
+4. Abrir `frontend/index.html` no navegador (duplo clique).
+
+## Testes de API
+- Coleções incluídas na raiz: `thunder-collection.json` e `insomnia-collection.json` com rotas
+  - GET/POST/PUT/DELETE /produtos
+  - POST /carrinho/confirmar (mock de pedido com baixa de estoque e `cupom: ALUNO10`)
