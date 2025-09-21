@@ -10,13 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectSort = document.getElementById('sort');
   const pager = document.getElementById('pagination');
 
-  // Helper: normaliza acentos/maiúsculas p/ chave de lookup
   function key(s){
     try { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
     catch(e){ return String(s).toLowerCase().trim(); }
   }
 
-  // Mapeamento de imagens (catálogo + carrinho) — chaves normalizadas
   const IMAGENS = {
     "lapis hb": "assets/img/lapis-hb.jpg",
     "caneta azul": "assets/img/Caneta azul.jpg",
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     "caderno universitario": "assets/img/caderno-universitario.jpg",
   };
 
-  // Modal de produto
   const modal = document.getElementById('product-modal');
   const btnCloseProduct = document.getElementById('btn-close-product');
   const form = document.getElementById('product-form');
@@ -55,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sku: field('err-sku'),
   };
 
-  // Acessibilidade: foco/teclado no drawer
   const focusableSelector = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
   let lastFocus = null;
   function trapFocus(container, e){
@@ -88,12 +84,43 @@ document.addEventListener('DOMContentLoaded', () => {
   drawer.addEventListener('click', (e) => { if (e.target === drawer) closeDrawer(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !drawer.classList.contains('hidden')) closeDrawer(); });
 
-  // Renderizar produto (catálogo)
+  // Botões Editar/Excluir
+  function productActions(p) {
+    const wrap = document.createElement('div');
+    wrap.className = 'product-actions';
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'btn-icon';
+    btnEdit.title = 'Editar';
+    btnEdit.setAttribute('aria-label', `Editar ${p.nome}`);
+    btnEdit.textContent = '✏️';
+    btnEdit.addEventListener('click', () => openForm('edit', p));
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-icon';
+    btnDel.title = 'Excluir';
+    btnDel.setAttribute('aria-label', `Excluir ${p.nome}`);
+    btnDel.textContent = '🗑️';
+    btnDel.addEventListener('click', async () => {
+      if (!confirm(`Excluir ${p.nome}?`)) return;
+      try {
+        await apiDelete(p.id);
+        showToast('Produto excluído.');
+        await loadProducts();
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao excluir.');
+      }
+    });
+
+    wrap.append(btnEdit, btnDel);
+    return wrap;
+  }
+
+  // Card do produto (agora com Editar/Excluir)
   function productCard(p) {
     const el = document.createElement('div');
     el.className = 'product-card';
 
-    // Thumb com imagem
     const thumb = document.createElement('div');
     thumb.className = 'product-thumb';
     const imgSrc = IMAGENS[key(p.nome)];
@@ -106,16 +133,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     el.appendChild(thumb);
 
-    // Demais infos
     el.insertAdjacentHTML('beforeend', `
       <h3>${p.nome}</h3>
       <p class="price">R$ ${Number(p.preco).toFixed(2)}</p>
       <button class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho">Adicionar</button>
     `);
+
+    // ações admin no card
+    el.appendChild(productActions(p));
+
     return el;
   }
 
-  // Estado de UX + filtros
   const UX_KEY = 'vendas_ux_v1';
   const ux = { sort: 'nome:asc', text: '', categoria: '', page: 1 };
   function saveUX(){ localStorage.setItem(UX_KEY, JSON.stringify(ux)); }
@@ -150,12 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await resp.json();
       window._lastList = Array.isArray(data) ? data.slice() : [];
 
-      // Popular categorias
       const categorias = [...new Set(data.map(p => p.categoria))].sort();
       selectCat.innerHTML = '<option value="">Todas categorias</option>' + categorias.map(c=>`<option value="${c}">${c}</option>`).join('');
       if (ux.categoria) selectCat.value = ux.categoria;
 
-      // Paginação (aqui usando a lista toda na página)
       const pageSize = data.length;
       const total = data.length;
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -171,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBox.textContent = `${total} produto(s) • página ${ux.page}/${totalPages}`;
       }
 
-      // Oculta pager por ora
       pager.innerHTML = '';
       if (pager) pager.style.display = 'none';
     } catch (err) {
@@ -184,25 +210,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadProducts();
 
-  // Carrinho (localStorage)
   const CART_KEY = 'vendas_cart_v1';
-  const cart = { items: {} }; // produtoId -> { produto, qtd }
+  const cart = { items: {} };
   function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateBadge(); }
   function loadCart() { try { const v = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); if (v && v.items) Object.assign(cart, v); } catch {} updateBadge(); }
   function countItems() { return Object.values(cart.items).reduce((acc, it) => acc + it.qtd, 0); }
   function subtotal() { return Object.values(cart.items).reduce((acc, it) => acc + (Number(it.produto.preco) * it.qtd), 0); }
 
-  // Badge
   const btnCartBadge = document.getElementById('btn-cart');
   function updateBadge() { btnCartBadge.dataset.count = String(countItems()); }
   loadCart();
 
-  // UI do carrinho dentro do drawer
   const cartItemsEl = document.getElementById('cart-items');
   const cartFooter = document.querySelector('.drawer-footer');
   const confirmBtn = cartFooter.querySelector('button.btn-primary');
 
-  // Cupom e Subtotal
   const couponWrap = document.createElement('div');
   couponWrap.className = 'form-row';
   couponWrap.innerHTML = `
@@ -244,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      // Miniatura no carrinho
       const thumbSrc = IMAGENS[key(produto.nome)];
       if (thumbSrc) {
         const img = document.createElement('img');
@@ -264,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     subtotalInput.value = `R$ ${subtotal().toFixed(2)}`;
   }
 
-  // Hook nos botões "Adicionar" dos cards
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button.btn.btn-primary');
     if (!btn) return;
@@ -275,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = nameEl ? nameEl.textContent : 'Produto';
     const price = priceEl ? Number(priceEl.textContent.replace(/[^0-9.,]/g,'').replace(',','.')) : 0;
 
-    // Busca produto pelo nome/preço atuais
     fetch('http://localhost:8000/produtos').then(r=>r.json()).then(list => {
       const prod = list.find(p => p.nome === name && Number(p.preco).toFixed(2) === price.toFixed(2));
       if (!prod) { showToast('Produto não encontrado.'); return; }
@@ -287,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Confirmar compra
   confirmBtn.addEventListener('click', async () => {
     const entries = Object.values(cart.items);
     if (entries.length === 0) return;
@@ -315,17 +333,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Re-render quando abrir o carrinho
   btnCart.addEventListener('click', renderCart);
 
-  // Util: toast
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2000);
   }
 
-  // Formulário: abrir/fechar
   function openForm(mode, data) {
     lastFocus = document.activeElement;
     modal.classList.remove('hidden');
@@ -352,7 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
   modal.addEventListener('click', (e) => { if (e.target === modal) closeForm(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeForm(); });
 
-  // Validações do formulário
   function validate() {
     let ok = true;
     Object.values(ferr).forEach(el => el.textContent = '');
@@ -370,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return ok;
   }
 
-  // CRUD helpers
   async function apiCreate(body) {
     const resp = await fetch('http://localhost:8000/produtos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -390,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!resp.ok) throw await resp.json();
   }
 
-  // Envio do formulário
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -422,138 +434,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
   field('btn-cancel').addEventListener('click', (e) => { e.preventDefault(); closeForm(); });
 
-  // Ações nos cards (editar/excluir) — (se você quiser usar depois)
-  function productActions(p) {
-    const wrap = document.createElement('div');
-    wrap.className = 'product-actions';
-    const btnEdit = document.createElement('button');
-    btnEdit.className = 'btn-icon';
-    btnEdit.title = 'Editar';
-    btnEdit.textContent = '✏️';
-    btnEdit.addEventListener('click', () => openForm('edit', p));
+  // ===== Export (CSV/JSON) — Excel-friendly (UTF-16 LE) =====
+  function toCSV(rows) {
+    const DELIM = ';';
+    const headers = ["nome","preco","estoque","categoria","sku"];
+    const lines = [];
+    lines.push("sep=" + DELIM);
+    lines.push(headers.join(DELIM));
 
-    const btnDel = document.createElement('button');
-    btnDel.className = 'btn-icon';
-    btnDel.title = 'Excluir';
-    btnDel.textContent = '🗑️';
-    btnDel.addEventListener('click', async () => {
-      if (!confirm(`Excluir ${p.nome}?`)) return;
-      try {
-        await apiDelete(p.id);
-        showToast('Produto excluído.');
-        await loadProducts();
-      } catch (err) {
-        console.error(err);
-        showToast('Erro ao excluir.');
-      }
-    });
+    if (!rows || !rows.length) return lines.join("\n");
 
-    wrap.append(btnEdit, btnDel);
-    return wrap;
-  }
-
-  // Filtros e ordenação (persistidos)
-  inputText.addEventListener('input', () => { ux.text = inputText.value.trim(); ux.page = 1; saveUX(); loadProducts(); });
-  selectCat.addEventListener('change', () => { ux.categoria = selectCat.value; ux.page = 1; saveUX(); loadProducts(); });
-  selectSort.addEventListener('change', () => { ux.sort = selectSort.value; ux.page = 1; saveUX(); loadProducts(); });
-
-  // ===== Export (CSV/JSON) da lista atual =====
-  // ===== Export (CSV/JSON) da lista atual =====
-function toCSV(rows) {
-  const DELIM = ';'; // Excel pt-BR usa ponto e vírgula
-  const headers = ["nome","preco","estoque","categoria","sku"];
-  const lines = [];
-  // dica p/ Excel reconhecer o separador
-  lines.push("sep=" + DELIM);
-  // cabeçalho
-  lines.push(headers.join(DELIM));
-
-  if (!rows || !rows.length) return lines.join("\n");
-
-  function esc(val) {
-    if (val == null) return "";
-    let v = String(val);
-    // normaliza quebras de linha e escapa aspas
-    v = v.replace(/\r\n|\r|\n/g, "\n").replace(/"/g, '""');
-    // se contiver delimitador, aspas ou quebra de linha, envolve em aspas
-    if (v.includes(DELIM) || v.includes('"') || v.includes('\n')) {
-      v = `"${v}"`;
+    function esc(val) {
+      if (val == null) return "";
+      let v = String(val).replace(/\r\n|\r|\n/g, "\n").replace(/"/g, '""');
+      if (v.includes(DELIM) || v.includes('"') || v.includes('\n')) v = `"${v}"`;
+      return v;
     }
-    return v;
+
+    for (const r of rows) {
+      const preco = (typeof r.preco === 'number' ? r.preco : Number(r.preco || 0));
+      const precoBR = preco.toFixed(2).replace('.', ',');
+      lines.push([
+        esc(r.nome || ""),
+        esc(precoBR),
+        esc(r.estoque ?? ""),
+        esc(r.categoria || ""),
+        esc(r.sku || "")
+      ].join(DELIM));
+    }
+    return lines.join("\n");
   }
 
-  for (const r of rows) {
-    const preco = (typeof r.preco === 'number' ? r.preco : Number(r.preco || 0));
-    const precoBR = preco.toFixed(2).replace('.', ','); // vírgula decimal
-    const row = [
-      esc(r.nome || ""),
-      esc(precoBR),
-      esc(r.estoque ?? ""),
-      esc(r.categoria || ""),
-      esc(r.sku || "")
-    ];
-    lines.push(row.join(DELIM));
-  }
-  return lines.join("\n");
-}
-
-// Download CSV em UTF-16 LE com BOM (Excel-friendly)
-function downloadCSV_UTF16LE(filename, text) {
-  // prefixa BOM (0xFEFF) e converte cada code unit para UTF-16 LE
-  const utf16 = new Uint16Array(text.length + 1);
-  utf16[0] = 0xFEFF; // BOM
-  for (let i = 0; i < text.length; i++) {
-    utf16[i + 1] = text.charCodeAt(i);
-  }
-  const blob = new Blob([utf16], { type: "text/csv;charset=utf-16le" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-}
-
-function download(filename, text, type="text/plain") {
-  const blob = new Blob([text], {type});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
-}
-
-async function exportCurrent(kind) {
-  // Reaproveita a mesma query usada no loadProducts()
-  const params = new URLSearchParams();
-  if (ux.text) params.set('search', ux.text);
-  if (ux.categoria) params.set('categoria', ux.categoria);
-  if (ux.sort) params.set('sort', ux.sort);
-
-  let list;
-  try {
-    const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
-    list = await resp.json();
-  } catch(e) {
-    list = Array.isArray(window._lastList) ? window._lastList : [];
+  function downloadCSV_UTF16LE(filename, text) {
+    const utf16 = new Uint16Array(text.length + 1);
+    utf16[0] = 0xFEFF; // BOM
+    for (let i = 0; i < text.length; i++) utf16[i + 1] = text.charCodeAt(i);
+    const blob = new Blob([utf16], { type: "text/csv;charset=utf-16le" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
   }
 
-  if (kind === 'csv') {
-    const csv = toCSV(list);
-    // usa UTF-16 LE para o Excel não estragar acentos
-    downloadCSV_UTF16LE(`catalogo_${new Date().toISOString().slice(0,10)}.csv`, csv);
-    showToast('Catálogo exportado em CSV.');
-  } else {
-    download(`catalogo_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(list, null, 2), "application/json");
-    showToast('Catálogo exportado em JSON.');
+  function download(filename, text, type="text/plain") {
+    const blob = new Blob([text], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
   }
-}
 
-const btnExportCSV = document.getElementById('btn-export-csv');
-const btnExportJSON = document.getElementById('btn-export-json');
-if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCurrent('csv'));
-if (btnExportJSON) btnExportJSON.addEventListener('click', () => exportCurrent('json'));
+  async function exportCurrent(kind) {
+    const params = new URLSearchParams();
+    if (ux.text) params.set('search', ux.text);
+    if (ux.categoria) params.set('categoria', ux.categoria);
+    if (ux.sort) params.set('sort', ux.sort);
+
+    let list;
+    try {
+      const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
+      list = await resp.json();
+    } catch(e) {
+      list = Array.isArray(window._lastList) ? window._lastList : [];
+    }
+
+    if (kind === 'csv') {
+      const csv = toCSV(list);
+      downloadCSV_UTF16LE(`catalogo_${new Date().toISOString().slice(0,10)}.csv`, csv);
+      showToast('Catálogo exportado em CSV.');
+    } else {
+      download(`catalogo_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(list, null, 2), "application/json");
+      showToast('Catálogo exportado em JSON.');
+    }
+  }
+
+  const btnExportCSV = document.getElementById('btn-export-csv');
+  const btnExportJSON = document.getElementById('btn-export-json');
+  if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCurrent('csv'));
+  if (btnExportJSON) btnExportJSON.addEventListener('click', () => exportCurrent('json'));
 });
