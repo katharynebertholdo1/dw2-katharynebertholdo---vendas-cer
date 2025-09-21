@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     catch(e){ return String(s).toLowerCase().trim(); }
   }
 
+  // Imagens (catalog + carrinho) — chaves normalizadas
   const IMAGENS = {
     "lapis hb": "assets/img/lapis-hb.jpg",
     "caneta azul": "assets/img/Caneta azul.jpg",
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     "caderno universitario": "assets/img/caderno-universitario.jpg",
   };
 
+  // Modal de produto
   const modal = document.getElementById('product-modal');
   const btnCloseProduct = document.getElementById('btn-close-product');
   const form = document.getElementById('product-form');
@@ -42,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     categoria: field('prod-categoria'),
     sku: field('prod-sku'),
   };
-
   const ferr = {
     nome: field('err-nome'),
     descricao: field('err-descricao'),
@@ -52,19 +53,18 @@ document.addEventListener('DOMContentLoaded', () => {
     sku: field('err-sku'),
   };
 
+  /* ===== Acessibilidade: drawer ===== */
   const focusableSelector = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
   let lastFocus = null;
   function trapFocus(container, e){
     const f = Array.from(container.querySelectorAll(focusableSelector)).filter(el=>!el.hasAttribute('disabled'));
     if (f.length === 0) return;
-    const first = f[0];
-    const last = f[f.length-1];
+    const first = f[0], last = f[f.length-1];
     if (e.key === 'Tab'){
       if (e.shiftKey && document.activeElement === first){ last.focus(); e.preventDefault(); }
       else if (!e.shiftKey && document.activeElement === last){ first.focus(); e.preventDefault(); }
     }
   }
-
   const openDrawer = () => {
     lastFocus = document.activeElement;
     drawer.classList.remove('hidden');
@@ -84,39 +84,31 @@ document.addEventListener('DOMContentLoaded', () => {
   drawer.addEventListener('click', (e) => { if (e.target === drawer) closeDrawer(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !drawer.classList.contains('hidden')) closeDrawer(); });
 
-  // Botões Editar/Excluir
+  /* ===== Botões admin (editar/excluir) em cada card ===== */
   function productActions(p) {
     const wrap = document.createElement('div');
     wrap.className = 'product-actions';
     const btnEdit = document.createElement('button');
     btnEdit.className = 'btn-icon';
-    btnEdit.title = 'Editar';
-    btnEdit.setAttribute('aria-label', `Editar ${p.nome}`);
+    btnEdit.title = 'Editar'; btnEdit.setAttribute('aria-label', `Editar ${p.nome}`);
     btnEdit.textContent = '✏️';
     btnEdit.addEventListener('click', () => openForm('edit', p));
 
     const btnDel = document.createElement('button');
     btnDel.className = 'btn-icon';
-    btnDel.title = 'Excluir';
-    btnDel.setAttribute('aria-label', `Excluir ${p.nome}`);
+    btnDel.title = 'Excluir'; btnDel.setAttribute('aria-label', `Excluir ${p.nome}`);
     btnDel.textContent = '🗑️';
     btnDel.addEventListener('click', async () => {
       if (!confirm(`Excluir ${p.nome}?`)) return;
-      try {
-        await apiDelete(p.id);
-        showToast('Produto excluído.');
-        await loadProducts();
-      } catch (err) {
-        console.error(err);
-        showToast('Erro ao excluir.');
-      }
+      try { await apiDelete(p.id); showToast('Produto excluído.'); await loadProducts(); }
+      catch (err) { console.error(err); showToast('Erro ao excluir.'); }
     });
 
     wrap.append(btnEdit, btnDel);
     return wrap;
   }
 
-  // Card do produto (agora com Editar/Excluir)
+  /* ===== Card do produto (thumb com fundo branco) ===== */
   function productCard(p) {
     const el = document.createElement('div');
     el.className = 'product-card';
@@ -138,13 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <p class="price">R$ ${Number(p.preco).toFixed(2)}</p>
       <button class="btn btn-primary" aria-label="Adicionar ${p.nome} ao carrinho">Adicionar</button>
     `);
-
-    // ações admin no card
     el.appendChild(productActions(p));
-
     return el;
   }
 
+  /* ===== UX persistida (filtros/ordem) ===== */
   const UX_KEY = 'vendas_ux_v1';
   const ux = { sort: 'nome:asc', text: '', categoria: '', page: 1 };
   function saveUX(){ localStorage.setItem(UX_KEY, JSON.stringify(ux)); }
@@ -164,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  /* ===== Carregar produtos (filtros + ordenação) ===== */
   async function loadProducts() {
     grid.setAttribute('aria-busy', 'true');
     statusBox.textContent = 'Carregando produtos...';
@@ -179,25 +170,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await resp.json();
       window._lastList = Array.isArray(data) ? data.slice() : [];
 
+      // categorias
       const categorias = [...new Set(data.map(p => p.categoria))].sort();
       selectCat.innerHTML = '<option value="">Todas categorias</option>' + categorias.map(c=>`<option value="${c}">${c}</option>`).join('');
       if (ux.categoria) selectCat.value = ux.categoria;
 
-      const pageSize = data.length;
-      const total = data.length;
-      const totalPages = Math.max(1, Math.ceil(total / pageSize));
-      if (ux.page > totalPages) ux.page = 1;
-      const start = (ux.page - 1) * pageSize;
-      const pageItems = data.slice(start, start + pageSize);
-
+      // render
       grid.innerHTML = '';
       if (!Array.isArray(data) || data.length === 0) {
         statusBox.textContent = 'Nenhum produto disponível.';
       } else {
-        pageItems.forEach(p => grid.appendChild(productCard(p)));
-        statusBox.textContent = `${total} produto(s) • página ${ux.page}/${totalPages}`;
+        data.forEach(p => grid.appendChild(productCard(p)));
+        statusBox.textContent = `${data.length} produto(s) • página 1/1`;
       }
 
+      // sem paginação por enquanto
       pager.innerHTML = '';
       if (pager) pager.style.display = 'none';
     } catch (err) {
@@ -207,16 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
       grid.setAttribute('aria-busy', 'false');
     }
   }
-
   loadProducts();
 
+  /* ===== Carrinho (localStorage) ===== */
   const CART_KEY = 'vendas_cart_v1';
-  const cart = { items: {} };
+  const cart = { items: {} }; // produtoId -> { produto, qtd }
   function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); updateBadge(); }
   function loadCart() { try { const v = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); if (v && v.items) Object.assign(cart, v); } catch {} updateBadge(); }
   function countItems() { return Object.values(cart.items).reduce((acc, it) => acc + it.qtd, 0); }
   function subtotal() { return Object.values(cart.items).reduce((acc, it) => acc + (Number(it.produto.preco) * it.qtd), 0); }
-
   const btnCartBadge = document.getElementById('btn-cart');
   function updateBadge() { btnCartBadge.dataset.count = String(countItems()); }
   loadCart();
@@ -225,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cartFooter = document.querySelector('.drawer-footer');
   const confirmBtn = cartFooter.querySelector('button.btn-primary');
 
+  // Cupom + subtotal
   const couponWrap = document.createElement('div');
   couponWrap.className = 'form-row';
   couponWrap.innerHTML = `
@@ -235,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const couponInput = couponWrap.querySelector('#cupom');
   const subtotalInput = couponWrap.querySelector('#subtotal');
 
+  /* ===== Render do carrinho com ícones (–, +, lixeira) ===== */
   function renderCart() {
     cartItemsEl.innerHTML = '';
     const entries = Object.values(cart.items);
@@ -245,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     confirmBtn.disabled = false;
+
     entries.forEach(({ produto, qtd }) => {
       const row = document.createElement('div');
       row.className = 'cart-row';
@@ -257,15 +246,38 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="color:#6b7280">R$ ${Number(produto.preco).toFixed(2)}</div>
             </div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button class="btn-ic" aria-label="Diminuir quantidade">-</button>
-            <span aria-live="polite" style="min-width:20px;text-align:center">${qtd}</span>
-            <button class="btn-ic" aria-label="Aumentar quantidade">+</button>
-            <button class="btn-ic" aria-label="Remover item">x</button>
+
+          <div class="qty" style="display:flex;gap:6px;align-items:center">
+            <button class="btn-ic" data-act="minus" aria-label="Diminuir quantidade" title="Diminuir">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"></path>
+              </svg>
+            </button>
+
+            <span aria-live="polite" style="min-width:24px;text-align:center">${qtd}</span>
+
+            <button class="btn-ic" data-act="plus" aria-label="Aumentar quantidade" title="Aumentar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+            </button>
+
+            <button class="btn-ic danger" data-act="remove" aria-label="Remover item" title="Remover">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
           </div>
         </div>
       `;
 
+      // Miniatura
       const thumbSrc = IMAGENS[key(produto.nome)];
       if (thumbSrc) {
         const img = document.createElement('img');
@@ -275,16 +287,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (holder) holder.appendChild(img);
       }
 
-      const [btnMinus, btnPlus, btnRemove] = row.querySelectorAll('button.btn-ic');
-      btnMinus.addEventListener('click', () => { if (cart.items[produto.id].qtd > 1) { cart.items[produto.id].qtd--; saveCart(); renderCart(); } });
-      btnPlus.addEventListener('click', () => { cart.items[produto.id].qtd++; saveCart(); renderCart(); });
-      btnRemove.addEventListener('click', () => { delete cart.items[produto.id]; saveCart(); renderCart(); });
+      const btnMinus  = row.querySelector('button[data-act="minus"]');
+      const btnPlus   = row.querySelector('button[data-act="plus"]');
+      const btnRemove = row.querySelector('button[data-act="remove"]');
+
+      btnMinus.addEventListener('click', () => {
+        if (cart.items[produto.id].qtd > 1) { cart.items[produto.id].qtd--; saveCart(); renderCart(); }
+      });
+      btnPlus.addEventListener('click', () => {
+        cart.items[produto.id].qtd++; saveCart(); renderCart();
+      });
+      btnRemove.addEventListener('click', () => {
+        delete cart.items[produto.id]; saveCart(); renderCart();
+      });
 
       cartItemsEl.appendChild(row);
     });
+
     subtotalInput.value = `R$ ${subtotal().toFixed(2)}`;
   }
 
+  // Hook no catálogo: adicionar ao carrinho
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button.btn.btn-primary');
     if (!btn) return;
@@ -300,17 +323,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!prod) { showToast('Produto não encontrado.'); return; }
       if (!cart.items[prod.id]) cart.items[prod.id] = { produto: prod, qtd: 0 };
       cart.items[prod.id].qtd++;
-      saveCart();
-      renderCart();
-      showToast('Adicionado ao carrinho.');
+      saveCart(); renderCart(); showToast('Adicionado ao carrinho.');
     });
   });
 
+  // Confirmar compra
   confirmBtn.addEventListener('click', async () => {
     const entries = Object.values(cart.items);
     if (entries.length === 0) return;
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Confirmando...';
+    confirmBtn.disabled = true; confirmBtn.textContent = 'Confirmando...';
     try {
       const payload = {
         itens: entries.map(({ produto, qtd }) => ({ produto_id: produto.id, quantidade: qtd })),
@@ -328,19 +349,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const msg = (err && err.detail && (err.detail.erro || err.detail)) || 'Erro ao confirmar.';
       showToast(typeof msg === 'string' ? msg : 'Erro ao confirmar.');
     } finally {
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Finalizar';
+      confirmBtn.disabled = false; confirmBtn.textContent = 'Finalizar';
     }
   });
 
   btnCart.addEventListener('click', renderCart);
 
+  /* ===== Toast ===== */
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2000);
   }
 
+  /* ===== Form de produto ===== */
   function openForm(mode, data) {
     lastFocus = document.activeElement;
     modal.classList.remove('hidden');
@@ -354,8 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fid.categoria.value = data.categoria || '';
       fid.sku.value = data.sku || '';
     } else {
-      form.reset();
-      fid.id.value = '';
+      form.reset(); fid.id.value = '';
     }
     fid.nome.focus();
     modal.addEventListener('keydown', onModalKeydown);
@@ -416,15 +437,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     try {
       const id = fid.id.value;
-      if (id) {
-        await apiUpdate(id, body);
-        showToast('Produto atualizado.');
-      } else {
-        await apiCreate(body);
-        showToast('Produto criado.');
-      }
-      closeForm();
-      await loadProducts();
+      if (id) { await apiUpdate(id, body); showToast('Produto atualizado.'); }
+      else { await apiCreate(body); showToast('Produto criado.'); }
+      closeForm(); await loadProducts();
     } catch (err) {
       console.error(err);
       const msg = (err && err.detail && (err.detail.erro || err.detail)) || 'Erro ao salvar produto.';
@@ -434,14 +449,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   field('btn-cancel').addEventListener('click', (e) => { e.preventDefault(); closeForm(); });
 
-  // ===== Export (CSV/JSON) — Excel-friendly (UTF-16 LE) =====
+  /* ===== Export CSV/JSON — Excel-friendly (UTF-16 LE) ===== */
   function toCSV(rows) {
     const DELIM = ';';
     const headers = ["nome","preco","estoque","categoria","sku"];
     const lines = [];
     lines.push("sep=" + DELIM);
     lines.push(headers.join(DELIM));
-
     if (!rows || !rows.length) return lines.join("\n");
 
     function esc(val) {
@@ -514,4 +528,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnExportJSON = document.getElementById('btn-export-json');
   if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportCurrent('csv'));
   if (btnExportJSON) btnExportJSON.addEventListener('click', () => exportCurrent('json'));
+
+  /* ===== Filtros e ordenação (persistidos) ===== */
+  inputText.addEventListener('input', () => { ux.text = inputText.value.trim(); ux.page = 1; saveUX(); loadProducts(); });
+  selectCat.addEventListener('change', () => { ux.categoria = selectCat.value; ux.page = 1; saveUX(); loadProducts(); });
+  selectSort.addEventListener('change', () => { ux.sort = selectSort.value; ux.page = 1; saveUX(); loadProducts(); });
 });
