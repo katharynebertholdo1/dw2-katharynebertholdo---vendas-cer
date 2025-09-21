@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ux.categoria) selectCat.value = ux.categoria;
 
       // Paginação (10 por página)
-      const pageSize = data.length;
+      const pageSize = 10;
       const total = data.length;
       const totalPages = Math.max(1, Math.ceil(total / pageSize));
       if (ux.page > totalPages) ux.page = 1;
@@ -141,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render pager
       pager.innerHTML = '';
 if (pager) pager.style.display = 'none';
-} catch (err) {
+);
+        pager.appendChild(b);
+      }
+    } catch (err) {
       console.error(err);
       statusBox.textContent = 'Erro ao carregar produtos. Verifique se o backend está em execução.';
     } finally {
