@@ -17,14 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Imagens (catalog + carrinho) — chaves normalizadas
   const IMAGENS = {
-    "lapis hb": "assets/img/lapis-hb.jpg",
-    "caneta azul": "assets/img/Caneta azul.jpg",
-    "caneta preta": "assets/img/Caneta preta.jpg",
-    "caneta vermelha": "assets/img/Caneta vermelha.jpg",
-    "borracha": "assets/img/Borracha.jpg",
-    "apontador": "assets/img/Apontador.jpg",
-    "regua 30cm": "assets/img/regua-30cm.jpg",
-    "caderno universitario": "assets/img/caderno-universitario.jpg",
+    "lapis hb": "/static/assets/img/lapis-hb.jpg",
+    "caneta azul": "/static/assets/img/Caneta azul.jpg",
+    "caneta preta": "/static/assets/img/Caneta preta.jpg",
+    "caneta vermelha": "/static/assets/img/Caneta vermelha.jpg",
+    "borracha": "/static/assets/img/Borracha.jpg",
+    "apontador": "/static/assets/img/Apontador.jpg",
+    "regua 30cm": "/static/assets/img/regua-30cm.jpg",
+    "caderno universitario": "/static/assets/img/caderno-universitario.jpg",
   };
 
   // Modal de produto
@@ -166,13 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ux.categoria) params.set('categoria', ux.categoria);
       if (ux.sort) params.set('sort', ux.sort);
 
-      const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
+      const resp = await fetch(`http://127.0.0.1:8000/api/produtos?${params.toString()}`);
       if (!resp.ok) throw new Error('Falha ao carregar produtos');
       const data = await resp.json();
       window._lastList = Array.isArray(data) ? data.slice() : [];
 
       // categorias
-      const categorias = [...new Set(data.map(p => p.categoria))].sort();
+      let categorias = [...new Set(data.map(p => p.categoria))].sort();
+const __normalizeCat = (s) => (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim();
+  categorias = categorias.filter(c => __normalizeCat(c) !== 'acessorios');
       selectCat.innerHTML = '<option value="">Todas categorias</option>' + categorias.map(c=>`<option value="${c}">${c}</option>`).join('');
       if (ux.categoria) selectCat.value = ux.categoria;
 
@@ -435,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = nameEl ? nameEl.textContent : 'Produto';
     const price = priceEl ? Number(priceEl.textContent.replace(/[^0-9.,]/g,'').replace(',','.')) : 0;
 
-    fetch('http://localhost:8000/produtos').then(r=>r.json()).then(list => {
+    fetch('http://127.0.0.1:8000/api/produtos').then(r=>r.json()).then(list => {
       const prod = list.find(p => p.nome === name && Number(p.preco).toFixed(2) === price.toFixed(2));
       if (!prod) { showToast('Produto não encontrado.'); return; }
       if (prod.estoque <= 0) { showToast('Sem estoque.'); return; }
@@ -455,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         itens: entries.map(({ produto, qtd }) => ({ produto_id: produto.id, quantidade: qtd })),
         cupom: couponInput.value.trim() || null,
       };
-      const resp = await fetch('http://localhost:8000/carrinho/confirmar', {
+      const resp = await fetch('http://127.0.0.1:8000/api/carrinho/confirmar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       if (!resp.ok) throw await resp.json();
@@ -524,21 +529,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function apiCreate(body) {
-    const resp = await fetch('http://localhost:8000/produtos', {
+    const resp = await fetch('http://127.0.0.1:8000/api/produtos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (!resp.ok) throw await resp.json();
     return resp.json();
   }
   async function apiUpdate(id, body) {
-    const resp = await fetch(`http://localhost:8000/produtos/${id}`, {
+    const resp = await fetch(`http://127.0.0.1:8000/api/produtos/${id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (!resp.ok) throw await resp.json();
     return resp.json();
   }
   async function apiDelete(id) {
-    const resp = await fetch(`http://localhost:8000/produtos/${id}`, { method: 'DELETE' });
+    const resp = await fetch(`http://127.0.0.1:8000/api/produtos/${id}`, { method: 'DELETE' });
     if (!resp.ok) throw await resp.json();
   }
 
@@ -626,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let list;
     try {
-      const resp = await fetch(`http://localhost:8000/produtos?${params.toString()}`);
+      const resp = await fetch(`http://127.0.0.1:8000/api/produtos?${params.toString()}`);
       list = await resp.json();
     } catch(e) {
       list = Array.isArray(window._lastList) ? window._lastList : [];
