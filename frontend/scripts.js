@@ -69,12 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
     lastFocus = document.activeElement;
     drawer.classList.remove('hidden');
     btnCart.setAttribute('aria-expanded', 'true');
+    btnCart.setAttribute('aria-pressed', 'true');
     btnClose.focus();
     drawer.addEventListener('keydown', onDrawerKeydown);
   };
   const closeDrawer = () => {
     drawer.classList.add('hidden');
     btnCart.setAttribute('aria-expanded', 'false');
+    btnCart.setAttribute('aria-pressed', 'false');
     drawer.removeEventListener('keydown', onDrawerKeydown);
     if (lastFocus) lastFocus.focus(); else btnCart.focus();
   };

@@ -4,10 +4,10 @@ Este documento consolida arquitetura, decisões técnicas, validações e pontos
 
 ## Arquitetura
 - Backend: FastAPI + SQLAlchemy + SQLite.
-	- Endpoints: `/health`, `/produtos` (GET/POST/PUT/DELETE), `/carrinho/confirmar`.
+	- Endpoints: `/health`, `/api/produtos` (GET/POST/PUT/DELETE), `/api/carrinho/confirmar`.
 	- Pydantic v2 (validações e serialização de Decimal).
 	- CORS liberado para facilitar uso do front via `file://`.
-- Banco de dados: `SQLite` (arquivo `vendas.db`).
+- Banco de dados: `SQLite` (arquivo `app.db`).
 - Frontend: HTML/CSS/JS Vanilla, consumo via fetch ao `http://localhost:8000`.
 
 ## Tecnologias e versões
@@ -148,5 +148,5 @@ Este documento consolida arquitetura, decisões técnicas, validações e pontos
   - POST /carrinho/confirmar (mock de pedido com baixa de estoque e `cupom: ALUNO10`)
 
 
-![alt text](image.png)
-![alt text](image-1.png)
+![Home](home.png)
+![Cupom](cupom.png)

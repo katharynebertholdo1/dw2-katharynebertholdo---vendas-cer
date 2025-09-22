@@ -201,3 +201,8 @@ if __name__ == "__main__":
     RESET = "\033[0m"
     print(f"{YELLOW}INFO: Open Live Server: http://127.0.0.1:8000{RESET}")
     uvicorn.run("backend.app:app", host="127.0.0.1", port=8000, reload=True)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+

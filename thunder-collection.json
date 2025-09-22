@@ -14,13 +14,13 @@
       "_id": "get-produtos",
       "name": "GET /produtos",
       "method": "GET",
-      "url": "http://localhost:8000/produtos"
+      "url": "http://localhost:8000/api/produtos"
     },
     {
       "_id": "post-produto",
       "name": "POST /produtos",
       "method": "POST",
-      "url": "http://localhost:8000/produtos",
+      "url": "http://localhost:8000/api/produtos",
       "body": {
         "type": "json",
         "raw": "{\n  \"nome\": \"Borracha 2\",\n  \"descricao\": \"Borracha teste\",\n  \"preco\": 2.99,\n  \"estoque\": 50,\n  \"categoria\": \"Acessórios\",\n  \"sku\": \"ACC-BOR-TEST\"\n}"
@@ -30,7 +30,7 @@
       "_id": "put-produto",
       "name": "PUT /produtos/{id}",
       "method": "PUT",
-      "url": "http://localhost:8000/produtos/1",
+      "url": "http://localhost:8000/api/produtos/1",
       "body": {
         "type": "json",
         "raw": "{\n  \"preco\": 3.49\n}"
@@ -40,13 +40,13 @@
       "_id": "delete-produto",
       "name": "DELETE /produtos/{id}",
       "method": "DELETE",
-      "url": "http://localhost:8000/produtos/1"
+      "url": "http://localhost:8000/api/produtos/1"
     },
     {
       "_id": "post-carrinho",
       "name": "POST /carrinho/confirmar",
       "method": "POST",
-      "url": "http://localhost:8000/carrinho/confirmar",
+      "url": "http://localhost:8000/api/carrinho/confirmar",
       "body": {
         "type": "json",
         "raw": "{\n  \"itens\": [\n    { \"produto_id\": 1, \"quantidade\": 1 },\n    { \"produto_id\": 4, \"quantidade\": 2 }\n  ],\n  \"cupom\": \"ALUNO10\"\n}"

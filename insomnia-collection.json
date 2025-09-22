@@ -24,7 +24,7 @@
       "parentId": "wrk_vendas",
       "name": "GET /produtos",
       "method": "GET",
-      "url": "http://localhost:8000/produtos"
+      "url": "http://localhost:8000/api/produtos"
     },
     {
       "_id": "req_post_produto",
@@ -32,7 +32,7 @@
       "parentId": "wrk_vendas",
       "name": "POST /produtos",
       "method": "POST",
-      "url": "http://localhost:8000/produtos",
+      "url": "http://localhost:8000/api/produtos",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"nome\": \"Produto Insomnia\",\n  \"descricao\": \"Criado pela coleção\",\n  \"preco\": 9.99,\n  \"estoque\": 10,\n  \"categoria\": \"Testes\",\n  \"sku\": \"INS-001\"\n}"
@@ -44,7 +44,7 @@
       "parentId": "wrk_vendas",
       "name": "PUT /produtos/{id}",
       "method": "PUT",
-      "url": "http://localhost:8000/produtos/1",
+      "url": "http://localhost:8000/api/produtos/1",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"preco\": 12.49\n}"
@@ -56,7 +56,7 @@
       "parentId": "wrk_vendas",
       "name": "DELETE /produtos/{id}",
       "method": "DELETE",
-      "url": "http://localhost:8000/produtos/1"
+      "url": "http://localhost:8000/api/produtos/1"
     },
     {
       "_id": "req_post_carrinho",
@@ -64,7 +64,7 @@
       "parentId": "wrk_vendas",
       "name": "POST /carrinho/confirmar",
       "method": "POST",
-      "url": "http://localhost:8000/carrinho/confirmar",
+      "url": "http://localhost:8000/api/carrinho/confirmar",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"itens\": [\n    { \"produto_id\": 1, \"quantidade\": 1 },\n    { \"produto_id\": 4, \"quantidade\": 2 }\n  ],\n  \"cupom\": \"ALUNO10\"\n}"

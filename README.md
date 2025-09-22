@@ -53,3 +53,14 @@ Status esperados:
 ---
 
 Copyright ©
+
+## Como gerar o print do **Form Admin com validações**
+
+1. Abra o backend: `uvicorn backend.app:app --reload` e acesse `http://localhost:8000` para servir estáticos.
+2. Abra o `frontend/index.html` no navegador.
+3. Clique em **Admin > Novo Produto** para abrir o formulário.
+4. **Provoque as validações**: deixe `Nome` com menos de 3 caracteres, `Preço` vazio ou `0`, `Estoque` negativo ou vazio, e remova a `Categoria` (seletor vazio). Tente **Salvar** para que as mensagens apareçam.
+5. Capture a tela (Windows: `Win+Shift+S` → modo Retângulo) e salve como `frontend/assets/prints/print-admin-validacoes.png`.
+6. Inclua esse arquivo no commit final e no `REPORT.md` (seção Evidências).
+
+> Dica: o botão **Carrinho** já possui `aria-pressed` e `aria-expanded` para acessibilidade; mantenha o foco visível na navegação por teclado para que o print mostre o estado.
